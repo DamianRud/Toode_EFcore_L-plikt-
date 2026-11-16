@@ -1,7 +1,8 @@
-﻿using System.Net;
-using System.Net.Mail;
+﻿using Microsoft.EntityFrameworkCore;
 using PdfSharpCore.Drawing;
 using PdfSharpCore.Pdf;
+using System.Net;
+using System.Net.Mail;
 
 namespace Tooded_EFCore;
 
@@ -117,6 +118,26 @@ public partial class ArveForm : Form
 
         try
         {
+            using var db = new ToodedContext();
+            using var tehing = db.Database.BeginTransaction();
+
+            // Kogused muudetakse andmebaasis sama tehingu sees.
+            // Kui toodet ei ole piisavalt, ostu ei salvestata.
+            foreach (var rida in Ostukorv.Ridad)
+            {
+                if (rida.Kogus <= 0)
+                    throw new InvalidOperationException("Vigane kogus ostukorvis.");
+
+                int muudetud = db.Toodetabel
+                    .Where(t => t.Id == rida.Toode.Id && t.Kogus >= rida.Kogus)
+                    .ExecuteUpdate(seaded => seaded
+                        .SetProperty(t => t.Kogus, t => t.Kogus - rida.Kogus));
+
+                if (muudetud != 1)
+                    throw new InvalidOperationException(
+                        $"Toodet '{rida.Toode.Toodenimetus}' ei ole piisavalt laos. Uuenda poodi.");
+            }
+
             var ost = new Ost
             {
                 Kuupaev = DateTime.Now,
@@ -131,17 +152,18 @@ public partial class ArveForm : Form
                 }).ToList()
             };
 
-            using var db = new ToodedContext();
             db.Ostud.Add(ost);
             db.SaveChanges();
+            tehing.Commit();
 
             Ostukorv.Tyhjenda();
+            viimanePdf = null;
             NaitaKorvi();
-            MessageBox.Show($"Ost nr {ost.Id} salvestati andmebaasi!");
+            MessageBox.Show($"Ost nr {ost.Id} salvestati! Laos olevad kogused uuendati.");
         }
         catch (Exception ex)
         {
-            MessageBox.Show("Ostu salvestamine ebaõnnestus: " + ex.Message);
+            MessageBox.Show("Ostu kinnitamine ebaõnnestus: " + ex.Message);
         }
     }
 

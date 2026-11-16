@@ -154,6 +154,7 @@ public partial class Form3 : Form
         {
             using var arve = new ArveForm();
             arve.ShowDialog(this);
+            LaePood(); // Värskenda laoseis pärast ostu
         };
 
         Controls.Add(tabPood);
@@ -264,6 +265,7 @@ public partial class Form3 : Form
         decimal maxHind = numMaxHind.Value;
 
         var kategooriad = _db.Kategooriatabel
+            .AsNoTracking()
             .Include(k => k.Tooded)
             .OrderBy(k => k.Kategooria_nimetus)
             .ToList();
@@ -387,7 +389,14 @@ public partial class Form3 : Form
 
         nupp.Click += (s, e) =>
         {
-            Ostukorv.Lisa(t, (int)kogus.Value);
+            if (!Ostukorv.Lisa(t, (int)kogus.Value))
+            {
+                MessageBox.Show(_language == "en-US"
+                    ? "Not enough stock. Check the quantity in your cart."
+                    : "Laos pole piisavalt toodet. Kontrolli ostukorvi kogust.");
+                LaePood();
+                return;
+            }
 
             string teade = _language == "en-US"
                 ? $"{t.Toodenimetus} ({kogus.Value} pcs) added to cart."

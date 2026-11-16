@@ -13,6 +13,17 @@ public partial class Form3 : Form
     private readonly ComboBox comboLanguage = new();
     private readonly Button btnOstukorv = new();
 
+    // Otsing ja hinnafilter
+    private readonly TextBox txtOtsing = new();
+    private readonly NumericUpDown numMinHind = new();
+    private readonly NumericUpDown numMaxHind = new();
+    private readonly Label lblMinHind = new();
+    private readonly Label lblMaxHind = new();
+    private readonly Label lblSort = new();
+    private readonly ComboBox comboSort = new();
+    private readonly Button btnReset = new();
+    private bool _sortUpdating = false;
+
     private readonly ComponentResourceManager _resources =
         new(typeof(Form3));
 
@@ -42,11 +53,11 @@ public partial class Form3 : Form
         BackColor = Color.FromArgb(245, 247, 250);
         Font = new System.Drawing.Font("Segoe UI", 10);
 
-        // Ülemine keelevaliku paneel
+        // ---------- Ülemine paneel ----------
         var paneel = new Panel
         {
             Dock = DockStyle.Top,
-            Height = 48,
+            Height = 102,
             BackColor = Color.White
         };
 
@@ -55,38 +66,79 @@ public partial class Form3 : Form
             Text = "Keel / Language:",
             Location = new Point(615, 14),
             AutoSize = true,
-            Font = new System.Drawing.Font(
-                "Segoe UI", 10, FontStyle.Bold)
+            Font = new System.Drawing.Font("Segoe UI", 10, FontStyle.Bold)
         };
 
         comboLanguage.Name = "comboLanguage";
-        comboLanguage.DropDownStyle =
-            ComboBoxStyle.DropDownList;
-
+        comboLanguage.DropDownStyle = ComboBoxStyle.DropDownList;
         comboLanguage.SetBounds(755, 9, 150, 30);
-
-        _keelLaetud = false;
 
         comboLanguage.Items.Add("Eesti");
         comboLanguage.Items.Add("English");
-
-        comboLanguage.SelectedItem =
-            _language == "en-US" ? "English" : "Eesti";
-
-        comboLanguage.SelectedIndexChanged +=
-            comboLanguage_SelectedIndexChanged;
-
+        comboLanguage.SelectedItem = _language == "en-US" ? "English" : "Eesti";
+        comboLanguage.SelectedIndexChanged += comboLanguage_SelectedIndexChanged;
         _keelLaetud = true;
 
-        paneel.Controls.Add(lblKeel);
-        paneel.Controls.Add(comboLanguage);
+        // ---------- Otsing ----------
+        txtOtsing.Name = "txtOtsing";
+        txtOtsing.SetBounds(15, 10, 350, 30);
+        txtOtsing.TextChanged += (s, e) => LaePood();
 
-        // Poe vahelehed
+        // ---------- Hind ----------
+        lblMinHind.SetBounds(15, 60, 85, 25);
+        numMinHind.SetBounds(100, 55, 105, 30);
+        numMinHind.Minimum = 0;
+        numMinHind.Maximum = 1000000;
+        numMinHind.DecimalPlaces = 2;
+        numMinHind.Increment = 0.50M;
+        numMinHind.ValueChanged += (s, e) => LaePood();
+
+        lblMaxHind.SetBounds(215, 60, 85, 25);
+        numMaxHind.SetBounds(300, 55, 105, 30);
+        numMaxHind.Minimum = 0;
+        numMaxHind.Maximum = 1000000;
+        numMaxHind.DecimalPlaces = 2;
+        numMaxHind.Increment = 0.50M;
+        numMaxHind.Value = 1000000;
+        numMaxHind.ValueChanged += (s, e) => LaePood();
+
+        // ---------- Sorteerimine ----------
+        lblSort.SetBounds(420, 60, 85, 25);
+        comboSort.SetBounds(505, 55, 245, 30);
+        comboSort.DropDownStyle = ComboBoxStyle.DropDownList;
+        comboSort.SelectedIndexChanged += (s, e) =>
+        {
+            if (!_sortUpdating) LaePood();
+        };
+
+        // ---------- Filtrite lähtestamine ----------
+        btnReset.SetBounds(770, 55, 135, 30);
+        btnReset.FlatStyle = FlatStyle.Flat;
+        btnReset.BackColor = Color.FromArgb(230, 235, 241);
+        btnReset.FlatAppearance.BorderSize = 0;
+        btnReset.Cursor = Cursors.Hand;
+        btnReset.Click += (s, e) =>
+        {
+            txtOtsing.Clear();
+            numMinHind.Value = 0;
+            numMaxHind.Value = numMaxHind.Maximum;
+            comboSort.SelectedIndex = 0;
+            LaePood();
+        };
+
+        paneel.Controls.AddRange(new Control[]
+        {
+            lblKeel, comboLanguage, txtOtsing,
+            lblMinHind, numMinHind, lblMaxHind, numMaxHind,
+            lblSort, comboSort, btnReset
+        });
+
+        // ---------- Poe vahelehed ----------
         tabPood.Dock = DockStyle.Fill;
         tabPood.Font = new System.Drawing.Font(
             "Segoe UI", 10, FontStyle.Bold);
 
-        // Ostukorvi nupp
+        // ---------- Ostukorvi nupp ----------
         btnOstukorv.Dock = DockStyle.Bottom;
         btnOstukorv.Height = 45;
         btnOstukorv.BackColor =
@@ -160,20 +212,56 @@ public partial class Form3 : Form
         btnOstukorv.Text =
             T("GoToCart", "Mine ostukorvi") + " →";
 
-        // Uuenda kategooriad ja tootekaardid
+        // Otsingu ja filtrite tõlked
+        txtOtsing.PlaceholderText = _language == "en-US"
+            ? "Search products..."
+            : "Otsi toodet...";
+
+        lblMinHind.Text = _language == "en-US"
+            ? "Min price:"
+            : "Min hind:";
+
+        lblMaxHind.Text = _language == "en-US"
+            ? "Max price:"
+            : "Max hind:";
+
+        lblSort.Text = _language == "en-US" ? "Sort by:" : "Sorteeri:";
+        btnReset.Text = _language == "en-US" ? "Reset filters" : "Tühjenda";
+
+        int eelmineValik = Math.Max(0, comboSort.SelectedIndex);
+        _sortUpdating = true;
+        comboSort.Items.Clear();
+        if (_language == "en-US")
+            comboSort.Items.AddRange(new object[]
+            {
+                "Name: A–Z", "Name: Z–A", "Price: low to high", "Price: high to low"
+            });
+        else
+            comboSort.Items.AddRange(new object[]
+            {
+                "Nimi: A–Z", "Nimi: Z–A", "Hind: odavam enne", "Hind: kallim enne"
+            });
+        comboSort.SelectedIndex = Math.Min(eelmineValik, comboSort.Items.Count - 1);
+        _sortUpdating = false;
+
         LaePood();
     }
 
-    // ---------- Poe laadimine ----------
+    // ---------- Poe laadimine ja filtreerimine ----------
     private void LaePood()
     {
-        // Eelmised vahelehed eemaldatakse
+        int valitudVaheleht = tabPood.SelectedIndex;
+
         while (tabPood.TabPages.Count > 0)
         {
             var vanaLeht = tabPood.TabPages[0];
             tabPood.TabPages.RemoveAt(0);
             vanaLeht.Dispose();
         }
+
+        string otsing = txtOtsing.Text.Trim();
+        decimal minHind = numMinHind.Value;
+        decimal maxHind = numMaxHind.Value;
 
         var kategooriad = _db.Kategooriatabel
             .Include(k => k.Tooded)
@@ -182,7 +270,6 @@ public partial class Form3 : Form
 
         foreach (var kat in kategooriad)
         {
-            // Kategooria tõlge resx-failist
             var leht = new TabPage(
                 T("Category_" + kat.Id, kat.Kategooria_nimetus))
             {
@@ -191,14 +278,29 @@ public partial class Form3 : Form
                     Color.FromArgb(245, 247, 250)
             };
 
+            // Otsime nime ja hinna järgi
+            var filtreeritud = kat.Tooded
+                .Where(t =>
+                    t.Toodenimetus.Contains(
+                        otsing,
+                        StringComparison.OrdinalIgnoreCase)
+                    && t.Hind >= minHind
+                    && t.Hind <= maxHind);
+
+            var tooted = (comboSort.SelectedIndex switch
+            {
+                1 => filtreeritud.OrderByDescending(t => t.Toodenimetus),
+                2 => filtreeritud.OrderBy(t => t.Hind).ThenBy(t => t.Toodenimetus),
+                3 => filtreeritud.OrderByDescending(t => t.Hind).ThenBy(t => t.Toodenimetus),
+                _ => filtreeritud.OrderBy(t => t.Toodenimetus)
+            }).ToList();
+
             int i = 0;
 
-            foreach (var toode in kat.Tooded
-                .OrderBy(t => t.Toodenimetus))
+            foreach (var toode in tooted)
             {
                 var kaart = LooTootekaart(toode);
 
-                // Viis toodet ühes reas
                 kaart.Location = new Point(
                     10 + (i % 5) * 175,
                     10 + (i / 5) * 250
@@ -210,6 +312,9 @@ public partial class Form3 : Form
 
             tabPood.TabPages.Add(leht);
         }
+
+        if (tabPood.TabPages.Count > 0 && valitudVaheleht >= 0)
+            tabPood.SelectedIndex = Math.Min(valitudVaheleht, tabPood.TabPages.Count - 1);
     }
 
     // ---------- Tootekaart ----------
@@ -264,7 +369,7 @@ public partial class Form3 : Form
                 "Segoe UI", 9)
         };
 
-        // Ostukorvi lisamise nupp
+        // Lisa ostukorvi
         var nupp = new Button
         {
             Bounds = new Rectangle(67, 195, 86, 30),
@@ -280,7 +385,6 @@ public partial class Form3 : Form
 
         nupp.FlatAppearance.BorderSize = 0;
 
-        // Lisa ostukorvi
         nupp.Click += (s, e) =>
         {
             Ostukorv.Lisa(t, (int)kogus.Value);

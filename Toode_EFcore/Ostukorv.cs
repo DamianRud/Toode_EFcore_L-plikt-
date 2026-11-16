@@ -1,5 +1,4 @@
-﻿
-namespace Tooded_EFCore;
+﻿namespace Tooded_EFCore;
 
 public class OstukorviRida
 {
@@ -18,7 +17,6 @@ public static class Ostukorv
 
     public static decimal Kokku => Ridad.Sum(r => r.Summa);
 
-    // Kui toode on juba korvis, suurendatakse kogust
     public static void Lisa(Toode toode, int kogus)
     {
         var olemas = Ridad.FirstOrDefault(r => r.Toode.Id == toode.Id);

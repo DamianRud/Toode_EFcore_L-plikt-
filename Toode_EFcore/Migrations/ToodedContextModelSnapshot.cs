@@ -93,6 +93,9 @@ namespace Toode_EFcore.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("KasutajaId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<decimal>("Kokku")
                         .HasColumnType("TEXT");
 

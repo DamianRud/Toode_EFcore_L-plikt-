@@ -1,10 +1,15 @@
-﻿namespace Tooded_EFCore;
+﻿
+namespace Tooded_EFCore;
 
 public class Ost
 {
     public int Id { get; set; }
     public DateTime Kuupaev { get; set; }
     public decimal Kokku { get; set; }
+
+    // Ostja ID. Vanadel ostudel võib olla null.
+    public int? KasutajaId { get; set; }
+
     public List<Osturida> Read { get; set; } = new();
 }
 

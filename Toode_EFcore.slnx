@@ -1,3 +1,6 @@
 <Solution>
+  <Project Path="ToodedInstaller/ToodedInstaller.vdproj" Type="Installer">
+    <Build />
+  </Project>
   <Project Path="Toode_EFcore/Toode_EFcore.csproj" />
 </Solution>

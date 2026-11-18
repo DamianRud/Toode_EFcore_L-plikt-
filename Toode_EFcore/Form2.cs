@@ -25,6 +25,8 @@ public partial class Form2 : Form
         RakendaDisain();
         LaeKategooriad();
         LaeTooted();
+        RakendaKeel();
+        Activated += (s, e) => RakendaKeel();
 
         if (!AktiivneKasutaja.OnAdmin)
         {
@@ -162,6 +164,32 @@ public partial class Form2 : Form
         nupp.Cursor = Cursors.Hand;
     }
 
+    // ---------- EST / ENG ----------
+    private void RakendaKeel()
+    {
+        Text = Keel.T("Toodete haldus", "Product management");
+        txtNimetus.PlaceholderText = Keel.T("Toote nimetus", "Product name");
+        txtKogus.PlaceholderText = Keel.T("Kogus", "Quantity");
+        txtHind.PlaceholderText = Keel.T("Hind €, nt 2,50", "Price €, e.g. 2.50");
+        btnValiPilt.Text = Keel.T("Vali pilt", "Choose image");
+        btnLisa.Text = Keel.T("Lisa", "Add");
+        btnUuenda.Text = Keel.T("Uuenda", "Update");
+        btnKustuta.Text = Keel.T("Kustuta", "Delete");
+        btnTyhjenda.Text = Keel.T("Tühjenda väljad", "Clear fields");
+        var headers = new (string Key, string Et, string En)[]
+        {
+            ("Id", "ID", "ID"),
+            ("Toodenimetus", "Toote nimetus", "Product name"),
+            ("Kogus", "Kogus", "Quantity"),
+            ("Hind", "Hind (€)", "Price (€)"),
+            ("Kategooria", "Kategooria", "Category"),
+            ("Pilt", "Pilt", "Image")
+        };
+        foreach (var (key, et, en) in headers)
+            if (dataGridViewTooted.Columns.Contains(key))
+                dataGridViewTooted.Columns[key]!.HeaderText = Keel.T(et, en);
+    }
+
     // ---------- Andmete laadimine ----------
     private void LaeKategooriad()
     {
@@ -189,6 +217,7 @@ public partial class Form2 : Form
             .ToList();
 
         dataGridViewTooted.Columns["KategooriaId"]!.Visible = false;
+        RakendaKeel();
     }
 
     // ---------- Pildi valimine ----------
@@ -196,7 +225,7 @@ public partial class Form2 : Form
     {
         using var ofd = new OpenFileDialog
         {
-            Filter = "Pildid|*.jpg;*.jpeg;*.png"
+            Filter = Keel.T("Pildid|*.jpg;*.jpeg;*.png", "Images|*.jpg;*.jpeg;*.png")
         };
 
         if (ofd.ShowDialog() != DialogResult.OK)
@@ -213,13 +242,13 @@ public partial class Form2 : Form
     {
         if (string.IsNullOrWhiteSpace(txtNimetus.Text))
         {
-            MessageBox.Show("Sisesta toote nimetus.");
+            MessageBox.Show(Keel.T("Sisesta toote nimetus.", "Enter a product name."));
             return false;
         }
 
         if (!int.TryParse(txtKogus.Text, out int kogus) || kogus < 0)
         {
-            MessageBox.Show("Kogus peab olema täisarv (0 või rohkem).");
+            MessageBox.Show(Keel.T("Kogus peab olema täisarv (0 või rohkem).", "Quantity must be a whole number (0 or more)."));
             return false;
         }
 
@@ -229,13 +258,13 @@ public partial class Form2 : Form
             CultureInfo.InvariantCulture,
             out decimal hind) || hind < 0)
         {
-            MessageBox.Show("Hind peab olema arv, nt 2,50.");
+            MessageBox.Show(Keel.T("Hind peab olema arv, nt 2,50.", "Price must be a number, e.g. 2.50."));
             return false;
         }
 
         if (comboKategooria.SelectedValue is not int kategooriaId)
         {
-            MessageBox.Show("Vali kategooria.");
+            MessageBox.Show(Keel.T("Vali kategooria.", "Select a category."));
             return false;
         }
 
@@ -266,7 +295,7 @@ public partial class Form2 : Form
     {
         if (dataGridViewTooted.SelectedRows.Count == 0)
         {
-            MessageBox.Show("Vali tabelist toode.");
+            MessageBox.Show(Keel.T("Vali tabelist toode.", "Select a product from the table."));
             return null;
         }
 
@@ -345,8 +374,8 @@ public partial class Form2 : Form
             return;
 
         if (MessageBox.Show(
-            "Kas kustutan valitud toote?",
-            "Kinnitus",
+            Keel.T("Kas kustutan valitud toote?", "Delete the selected product?"),
+            Keel.T("Kinnitus", "Confirmation"),
             MessageBoxButtons.YesNo) != DialogResult.Yes)
         {
             return;

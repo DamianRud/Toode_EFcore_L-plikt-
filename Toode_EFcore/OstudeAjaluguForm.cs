@@ -7,23 +7,20 @@ public class OstudeAjaluguForm : Form
     private readonly DataGridView tabel = new();
     private readonly DataGridView read = new();
     private readonly Label lblKokku = new();
+    private readonly Label pealkiri = new();
+    private readonly Label lblRead = new();
 
     public OstudeAjaluguForm()
     {
-        Text = "Ostude ajalugu";
         StartPosition = FormStartPosition.CenterParent;
         ClientSize = new Size(830, 560);
         BackColor = Color.WhiteSmoke;
         Font = new System.Drawing.Font("Segoe UI", 10);
 
-        var pealkiri = new Label
-        {
-            Text = "OSTUDE AJALUGU",
-            Dock = DockStyle.Top,
-            Height = 45,
-            TextAlign = ContentAlignment.MiddleCenter,
-            Font = new System.Drawing.Font("Segoe UI", 15, FontStyle.Bold)
-        };
+        pealkiri.Dock = DockStyle.Top;
+        pealkiri.Height = 45;
+        pealkiri.TextAlign = ContentAlignment.MiddleCenter;
+        pealkiri.Font = new System.Drawing.Font("Segoe UI", 15, FontStyle.Bold);
 
         tabel.Dock = DockStyle.Top;
         tabel.Height = 235;
@@ -39,13 +36,9 @@ public class OstudeAjaluguForm : Form
         tabel.Columns.Add("Kokku", "Kokku (€)");
         tabel.SelectionChanged += (s, e) => NaitaOstuRead();
 
-        var lblRead = new Label
-        {
-            Text = "Ostu tooted",
-            Dock = DockStyle.Top,
-            Height = 34,
-            TextAlign = ContentAlignment.MiddleLeft
-        };
+        lblRead.Dock = DockStyle.Top;
+        lblRead.Height = 34;
+        lblRead.TextAlign = ContentAlignment.MiddleLeft;
 
         read.Dock = DockStyle.Fill;
         read.ReadOnly = true;
@@ -70,7 +63,24 @@ public class OstudeAjaluguForm : Form
         Controls.Add(tabel);
         Controls.Add(pealkiri);
 
+        RakendaKeel();
         LaeOstud();
+        Activated += (s, e) => RakendaKeel();
+    }
+
+    private void RakendaKeel()
+    {
+        Text = Keel.T("Ostude ajalugu", "Purchase history");
+        pealkiri.Text = Keel.T("OSTUDE AJALUGU", "PURCHASE HISTORY");
+        lblRead.Text = Keel.T("Ostu tooted", "Purchased items");
+        tabel.Columns["Id"]!.HeaderText = Keel.T("Ostu nr", "Order #");
+        tabel.Columns["Kuupaev"]!.HeaderText = Keel.T("Kuupäev", "Date");
+        tabel.Columns["Kokku"]!.HeaderText = Keel.T("Kokku (€)", "Total (€)");
+        read.Columns["Toode"]!.HeaderText = Keel.T("Toode", "Product");
+        read.Columns["Kogus"]!.HeaderText = Keel.T("Kogus", "Quantity");
+        read.Columns["Hind"]!.HeaderText = Keel.T("Hind (€)", "Price (€)");
+        read.Columns["Summa"]!.HeaderText = Keel.T("Summa (€)", "Amount (€)");
+        NaitaOstuRead();
     }
 
     private void LaeOstud()
@@ -83,7 +93,9 @@ public class OstudeAjaluguForm : Form
 
         tabel.Rows.Clear();
         foreach (var ost in ostud)
-            tabel.Rows.Add(ost.Id, ost.Kuupaev.ToString("dd.MM.yyyy HH:mm"), ost.Kokku.ToString("F2"));
+            tabel.Rows.Add(ost.Id,
+                ost.Kuupaev.ToString("dd.MM.yyyy HH:mm"),
+                ost.Kokku.ToString("F2"));
 
         if (tabel.Rows.Count > 0)
             tabel.Rows[0].Selected = true;
@@ -94,17 +106,14 @@ public class OstudeAjaluguForm : Form
     {
         read.Rows.Clear();
         lblKokku.Text = "";
-
         if (tabel.SelectedRows.Count == 0)
             return;
 
         int ostuId = Convert.ToInt32(tabel.SelectedRows[0].Cells[0].Value);
-
         using var db = new ToodedContext();
         var ost = db.Ostud.AsNoTracking()
             .Include(o => o.Read)
             .FirstOrDefault(o => o.Id == ostuId);
-
         if (ost == null)
             return;
 
@@ -112,6 +121,6 @@ public class OstudeAjaluguForm : Form
             read.Rows.Add(rida.TooteNimi, rida.Kogus,
                 rida.Hind.ToString("F2"), rida.Summa.ToString("F2"));
 
-        lblKokku.Text = $"Kokku: {ost.Kokku:F2} €";
+        lblKokku.Text = $"{Keel.T("Kokku", "Total")}: {ost.Kokku:F2} €";
     }
 }
